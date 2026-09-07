@@ -1,0 +1,71 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: decd11848d11a0a4cacf99586554d0a4, type: 3}
+  m_Name: SaveCurupiraSettings
+  m_EditorClassIdentifier: 
+  totalGameTime: 600
+  currentDifficulty: 0
+  easySettings:
+    rootCount: 6
+    rootHealth: 6
+    spawnMilestones:
+    - timeMarkSeconds: 0
+      secondsBetweenFruits: 3
+    - timeMarkSeconds: 30
+      secondsBetweenFruits: 1.7
+    - timeMarkSeconds: 60
+      secondsBetweenFruits: 1.1
+    - timeMarkSeconds: 90
+      secondsBetweenFruits: 0.9
+    - timeMarkSeconds: 120
+      secondsBetweenFruits: 0.7
+    - timeMarkSeconds: 150
+      secondsBetweenFruits: 0.6
+    - timeMarkSeconds: 180
+      secondsBetweenFruits: 0.5
+  mediumSettings:
+    rootCount: 8
+    rootHealth: 8
+    spawnMilestones:
+    - timeMarkSeconds: 0
+      secondsBetweenFruits: 3
+    - timeMarkSeconds: 30
+      secondsBetweenFruits: 1.4
+    - timeMarkSeconds: 60
+      secondsBetweenFruits: 1
+    - timeMarkSeconds: 90
+      secondsBetweenFruits: 0.7
+    - timeMarkSeconds: 120
+      secondsBetweenFruits: 0.6
+    - timeMarkSeconds: 150
+      secondsBetweenFruits: 0.5
+    - timeMarkSeconds: 180
+      secondsBetweenFruits: 0.4
+  hardSettings:
+    rootCount: 10
+    rootHealth: 10
+    spawnMilestones:
+    - timeMarkSeconds: 0
+      secondsBetweenFruits: 3
+    - timeMarkSeconds: 30
+      secondsBetweenFruits: 1.3
+    - timeMarkSeconds: 60
+      secondsBetweenFruits: 0.8
+    - timeMarkSeconds: 90
+      secondsBetweenFruits: 0.6
+    - timeMarkSeconds: 120
+      secondsBetweenFruits: 0.5
+    - timeMarkSeconds: 150
+      secondsBetweenFruits: 0.4
+    - timeMarkSeconds: 180
+      secondsBetweenFruits: 0.3
+  maxSpawnAngleDeviation: 30
