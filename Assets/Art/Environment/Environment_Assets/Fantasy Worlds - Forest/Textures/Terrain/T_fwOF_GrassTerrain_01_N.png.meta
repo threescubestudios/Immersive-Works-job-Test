@@ -1,12 +1,5 @@
 fileFormatVersion: 2
 guid: 0204b2e03a444064eb4ac039e9caa72a
-AssetOrigin:
-  serializedVersion: 1
-  productId: 342958
-  packageName: Fantasy Worlds - Forests, Meadows & Dungeons - Stylized 3D Environment
-  packageVersion: 1.0
-  assetPath: Assets/Art/Environment/Environment_Assets/Fantasy Worlds - Forest/Textures/Terrain/T_fwOF_GrassTerrain_01_N.png
-  uploadId: 813762
 TextureImporter:
   internalIDToNameTable: []
   externalObjects: {}
@@ -14,7 +7,7 @@ TextureImporter:
   mipmaps:
     mipMapMode: 0
     enableMipMap: 1
-    sRGBTexture: 0
+    sRGBTexture: 1
     linearTexture: 0
     fadeOut: 0
     borderMipMap: 0
@@ -61,7 +54,7 @@ TextureImporter:
   alphaUsage: 1
   alphaIsTransparency: 0
   spriteTessellationDetail: -1
-  textureType: 1
+  textureType: 0
   textureShape: 1
   singleChannelComponent: 0
   flipbookRows: 1
@@ -72,16 +65,16 @@ TextureImporter:
   ignorePngGamma: 0
   applyGammaDecoding: 0
   swizzle: 50462976
-  cookieLightType: 1
+  cookieLightType: 0
   platformSettings:
   - serializedVersion: 3
     buildTarget: DefaultTexturePlatform
-    maxTextureSize: 1024
+    maxTextureSize: 2048
     resizeAlgorithm: 0
     textureFormat: -1
     textureCompression: 1
-    compressionQuality: 75
-    crunchedCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
     allowsAlphaSplitting: 0
     overridden: 0
     ignorePlatformSupport: 0
@@ -101,7 +94,7 @@ TextureImporter:
     androidETC2FallbackOverride: 0
     forceMaximumCompressionQuality_BC6H_BC7: 0
   - serializedVersion: 3
-    buildTarget: Server
+    buildTarget: iPhone
     maxTextureSize: 2048
     resizeAlgorithm: 0
     textureFormat: -1

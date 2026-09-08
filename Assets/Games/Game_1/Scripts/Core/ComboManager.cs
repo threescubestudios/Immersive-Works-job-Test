@@ -6,67 +6,117 @@ namespace SaveCurupira.Core
     {
         public static ComboManager Instance { get; private set; }
 
-        private int currentStreak = 0;
-        public int CurrentMultiplier { get; private set; } = 1;
-        public int TotalScore { get; private set; } = 0;
-        public int TotalHits { get; private set; } = 0;
+        public int TotalScore { get; private set; }
+        public int TotalHits { get; private set; }
+        public int CurrentCombo { get; private set; }
+
+        public int MaxMisses => MAX_MISSES;
+
+        private int totalMisses;
+
+        private const int MAX_MISSES = 5;
 
         private void Awake()
         {
-            if (Instance == null) Instance = this;
-            else Destroy(gameObject);
+            if (Instance == null)
+            {
+                Instance = this;
+            }
+            else
+            {
+                Destroy(gameObject);
+            }
+        }
+
+        public void ResetStats()
+        {
+            TotalScore = 0;
+            TotalHits = 0;
+            CurrentCombo = 0;
+            totalMisses = 0;
+
+            Debug.Log("[ComboManager] Stats reset.");
         }
 
         public void RegisterHit()
         {
-            currentStreak++;
+            if (CurupiraGameController.Instance != null &&
+                CurupiraGameController.Instance.CurrentState !=
+                CurupiraGameController.GameState.Playing &&
+                CurupiraGameController.Instance.CurrentState !=
+                CurupiraGameController.GameState.Tutorial)
+            {
+                return;
+            }
+
+            CurrentCombo++;
             TotalHits++;
-            UpdateMultiplier();
-            
-            int pointsEarned = 100 * CurrentMultiplier;
-            TotalScore += pointsEarned;
-            
+
+            int points = 100 * CurrentCombo;
+
+            TotalScore += points;
+
+            Debug.Log(
+                $"Hit! Streak: {CurrentCombo}, " +
+                $"Points: +{points}, " +
+                $"Total Score: {TotalScore}"
+            );
+
             if (CurupiraGameController.Instance != null)
             {
-                CurupiraGameController.Instance.AddPoints(pointsEarned);
+                CurupiraGameController.Instance
+                    .ShowComboMessage(
+                        $"Hit! Streak: {CurrentCombo}, " +
+                        $"Points: +{points}"
+                    );
             }
-            
-            Debug.Log($"Hit! Streak: {currentStreak}, Points: +{pointsEarned}, Total Score: {TotalScore}");
         }
 
         public void RegisterMiss()
         {
-            if (currentStreak >= 5 && CurupiraGameController.Instance != null) 
+            if (CurupiraGameController.Instance != null &&
+                CurupiraGameController.Instance.CurrentState !=
+                CurupiraGameController.GameState.Playing &&
+                CurupiraGameController.Instance.CurrentState !=
+                CurupiraGameController.GameState.Tutorial)
             {
-                CurupiraGameController.Instance.ShowComboMessage("Combo Broken!");
+                return;
             }
-            
-            currentStreak = 0;
-            CurrentMultiplier = 1;
-            Debug.Log("Combo Broken!");
+
+            totalMisses++;
+            CurrentCombo = 0;
+
+            Debug.Log(
+                $"Combo Broken! " +
+                $"Misses: {totalMisses}/{MAX_MISSES}"
+            );
+
+            if (CurupiraGameController.Instance != null)
+            {
+                CurupiraGameController.Instance
+                    .ShowComboMessage(
+                        $"Missed! " +
+                        $"({totalMisses}/{MAX_MISSES})"
+                    );
+            }
+
+            if (totalMisses >= MAX_MISSES)
+            {
+                Debug.Log(
+                    "[ComboManager] Too many misses! Game Over!"
+                );
+
+                if (CurupiraGameController.Instance != null)
+                {
+                    CurupiraGameController.Instance
+                        .OnTooManyMisses();
+                }
+            }
         }
 
-        private void UpdateMultiplier()
+        public int GetMissCount()
         {
-            int previousMultiplier = CurrentMultiplier;
-
-            if (currentStreak >= 10)
-            {
-                CurrentMultiplier = 4;
-            }
-            else if (currentStreak >= 5)
-            {
-                CurrentMultiplier = 2;
-            }
-            else
-            {
-                CurrentMultiplier = 1;
-            }
-
-            if (CurrentMultiplier > previousMultiplier && CurupiraGameController.Instance != null)
-            {
-                CurupiraGameController.Instance.ShowComboMessage($"Combo x{CurrentMultiplier}!");
-            }
+            return totalMisses;
         }
     }
 }

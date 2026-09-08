@@ -1,3 +1,4 @@
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -5,59 +6,115 @@ namespace SaveCurupira.Core
 {
     public class FruitSpawnManager : MonoBehaviour
     {
-        public GameObject fruitPrefab;
-        public Transform[] spawnPoints;
-        public SaveCurupiraDescriptor descriptor;
-        
+        [Header("Fruit")]
+        [SerializeField] private GameObject fruitPrefab;
+        [SerializeField] private float fruitLifetime = 5f;
+
+        [Header("Spawn Points")]
+        [SerializeField] private Transform[] spawnPoints;
+
+        [Header("Difficulty")]
+        [SerializeField] private SaveCurupiraDescriptor descriptor;
+
         private float spawnTimer;
-        private Queue<GameObject> fruitPool = new Queue<GameObject>();
+
+        private readonly Queue<GameObject> fruitPool =
+            new Queue<GameObject>();
+
+        private readonly Dictionary<GameObject, Coroutine>
+            lifetimeCoroutines =
+            new Dictionary<GameObject, Coroutine>();
 
         private void Update()
         {
-            if (CurupiraGameController.Instance.CurrentState != CurupiraGameController.GameState.Playing)
+            if (CurupiraGameController.Instance == null)
+                return;
+
+            if (CurupiraGameController.Instance.CurrentState !=
+                CurupiraGameController.GameState.Playing)
                 return;
 
             float totalTime = 180f;
-            float timeElapsed = totalTime - CurupiraGameController.Instance.GetTimeRemaining();
-            float spawnRate = CalculateSpawnRate(timeElapsed, 180f);
-            
+
+            float timeElapsed =
+                totalTime -
+                CurupiraGameController.Instance.GetTimeRemaining();
+
+            float spawnRate =
+                CalculateSpawnRate(timeElapsed, totalTime);
+
             spawnTimer -= Time.deltaTime;
-            if (spawnTimer <= 0)
+
+            if (spawnTimer <= 0f)
             {
                 SpawnFruit();
                 spawnTimer = spawnRate;
             }
         }
 
-        private float CalculateSpawnRate(float timeElapsed, float totalTime)
+        private float CalculateSpawnRate(
+            float timeElapsed,
+            float totalTime)
         {
-            if (descriptor == null) return 3.0f;
-            
-            DifficultySettings settings = descriptor.GetCurrentSettings();
-            if (settings.spawnMilestones == null || settings.spawnMilestones.Length == 0) return 3.0f;
-            
-            SpawnMilestone prev = settings.spawnMilestones[0];
-            SpawnMilestone next = settings.spawnMilestones[settings.spawnMilestones.Length - 1];
-            
-            for (int i = 0; i < settings.spawnMilestones.Length - 1; i++)
+            if (descriptor == null)
+                return 2.5f;
+
+            DifficultySettings settings =
+                descriptor.GetCurrentSettings();
+
+            if (settings.spawnMilestones == null ||
+                settings.spawnMilestones.Length == 0)
+                return 2.5f;
+
+            SpawnMilestone prev =
+                settings.spawnMilestones[0];
+
+            SpawnMilestone next =
+                settings.spawnMilestones[
+                    settings.spawnMilestones.Length - 1
+                ];
+
+            for (int i = 0;
+                 i < settings.spawnMilestones.Length - 1;
+                 i++)
             {
-                if (timeElapsed >= settings.spawnMilestones[i].timeMarkSeconds && 
-                    timeElapsed < settings.spawnMilestones[i+1].timeMarkSeconds)
+                if (timeElapsed >=
+                        settings.spawnMilestones[i].timeMarkSeconds &&
+                    timeElapsed <
+                        settings.spawnMilestones[i + 1]
+                            .timeMarkSeconds)
                 {
                     prev = settings.spawnMilestones[i];
-                    next = settings.spawnMilestones[i+1];
+                    next = settings.spawnMilestones[i + 1];
                     break;
                 }
             }
-            
-            if (timeElapsed >= next.timeMarkSeconds) return next.secondsBetweenFruits;
-            if (timeElapsed <= prev.timeMarkSeconds) return prev.secondsBetweenFruits;
-            
-            float segmentDuration = next.timeMarkSeconds - prev.timeMarkSeconds;
-            float timeInSegment = timeElapsed - prev.timeMarkSeconds;
-            float t = timeInSegment / segmentDuration;
-            
-            return Mathf.Lerp(prev.secondsBetweenFruits, next.secondsBetweenFruits, t);
+
+            if (timeElapsed >= next.timeMarkSeconds)
+                return next.secondsBetweenFruits;
+
+            if (timeElapsed <= prev.timeMarkSeconds)
+                return prev.secondsBetweenFruits;
+
+            float segmentDuration =
+                next.timeMarkSeconds -
+                prev.timeMarkSeconds;
+
+            if (segmentDuration <= 0f)
+                return next.secondsBetweenFruits;
+
+            float timeInSegment =
+                timeElapsed -
+                prev.timeMarkSeconds;
+
+            float t =
+                timeInSegment / segmentDuration;
+
+            return Mathf.Lerp(
+                prev.secondsBetweenFruits,
+                next.secondsBetweenFruits,
+                t
+            );
         }
 
         public void SpawnSingleFruit()
@@ -67,63 +124,154 @@ namespace SaveCurupira.Core
 
         private void SpawnFruit()
         {
-            if (spawnPoints.Length == 0) return;
-            
-            // 0: Zone A (Left Side)
-            // 1: Zone B (Center Left - Top)
-            // 2: Zone C (Center Right - Top)
-            // 3: Zone D (Right Side)
-            int zone = Random.Range(0, 4);
-            
-            Vector3 startPos = Vector3.zero;
-            Vector3 exactVelocity = Vector3.zero;
-            
-            switch (zone)
+            if (fruitPrefab == null)
             {
-                case 0: // Zone A (Left) - Arcs right
-                    startPos = new Vector3(-4.5f, 0.5f, 5f);
-                    exactVelocity = new Vector3(Random.Range(3.5f, 5f), Random.Range(6.5f, 8f), 0f);
-                    break;
-                case 1: // Zone B (Center Left, Top) - Tossed just below the ceiling to fall gracefully
-                    startPos = new Vector3(-1.5f, 3.5f, 5f);
-                    exactVelocity = new Vector3(Random.Range(-0.5f, 1f), Random.Range(3.5f, 4.5f), 0f);
-                    break;
-                case 2: // Zone C (Center Right, Top) - Tossed just below the ceiling to fall gracefully
-                    startPos = new Vector3(1.5f, 3.5f, 5f);
-                    exactVelocity = new Vector3(Random.Range(-1f, 0.5f), Random.Range(3.5f, 4.5f), 0f);
-                    break;
-                case 3: // Zone D (Right) - Arcs left
-                    startPos = new Vector3(4.5f, 0.5f, 5f);
-                    exactVelocity = new Vector3(-Random.Range(3.5f, 5f), Random.Range(6.5f, 8f), 0f);
-                    break;
+                Debug.LogError(
+                    "[FruitSpawnManager] Fruit prefab is not assigned!"
+                );
+
+                return;
             }
-            
+
+            if (spawnPoints == null ||
+                spawnPoints.Length == 0)
+            {
+                Debug.LogWarning(
+                    "[FruitSpawnManager] No spawn points assigned!"
+                );
+
+                return;
+            }
+
+            Transform spawnPoint =
+                spawnPoints[
+                    Random.Range(0, spawnPoints.Length)
+                ];
+
             GameObject fruit = GetFruitFromPool();
-            fruit.transform.position = startPos;
+
+            fruit.transform.position =
+                spawnPoint.position;
+
+            fruit.transform.rotation =
+                spawnPoint.rotation;
+
             fruit.SetActive(true);
 
-            if(fruit.TryGetComponent(out Gameplay.FruitBehaviour behaviour))
+            Gameplay.FruitBehaviour behaviour =
+                fruit.GetComponent<Gameplay.FruitBehaviour>();
+
+            if (behaviour != null)
             {
-                // Pass the exact calculated velocity
-                behaviour.Initialize(exactVelocity);
+                Vector3 fallingVelocity =
+                    new Vector3(0f, -2f, 0f);
+
+                behaviour.Initialize(fallingVelocity);
             }
+
+            StartFruitLifetime(fruit);
+        }
+
+        private void StartFruitLifetime(GameObject fruit)
+        {
+            if (lifetimeCoroutines.TryGetValue(
+                    fruit,
+                    out Coroutine oldCoroutine))
+            {
+                if (oldCoroutine != null)
+                    StopCoroutine(oldCoroutine);
+            }
+
+            Coroutine coroutine =
+                StartCoroutine(
+                    ReturnFruitAfterLifetime(fruit)
+                );
+
+            lifetimeCoroutines[fruit] = coroutine;
+        }
+
+        private IEnumerator ReturnFruitAfterLifetime(
+            GameObject fruit)
+        {
+            yield return new WaitForSeconds(
+                fruitLifetime
+            );
+
+            if (fruit == null)
+                yield break;
+
+            if (!fruit.activeInHierarchy)
+                yield break;
+
+            Gameplay.FruitBehaviour behaviour =
+                fruit.GetComponent<Gameplay.FruitBehaviour>();
+
+            if (behaviour != null)
+                behaviour.OnExpired();
         }
 
         private GameObject GetFruitFromPool()
         {
-            if (fruitPool.Count > 0)
+            while (fruitPool.Count > 0)
             {
-                return fruitPool.Dequeue();
+                GameObject pooledFruit =
+                    fruitPool.Dequeue();
+
+                if (pooledFruit != null)
+                    return pooledFruit;
             }
-            GameObject newFruit = Instantiate(fruitPrefab);
-            newFruit.transform.localScale = new Vector3(0.5f, 0.5f, 0.5f);
+
+            GameObject newFruit =
+                Instantiate(fruitPrefab);
+
+            newFruit.transform.localScale =
+                new Vector3(0.5f, 0.5f, 0.5f);
+
             return newFruit;
         }
 
         public void ReturnToPool(GameObject fruit)
         {
+            if (fruit == null)
+                return;
+
+            if (lifetimeCoroutines.TryGetValue(
+                    fruit,
+                    out Coroutine coroutine))
+            {
+                if (coroutine != null)
+                    StopCoroutine(coroutine);
+
+                lifetimeCoroutines.Remove(fruit);
+            }
+
             fruit.SetActive(false);
-            fruitPool.Enqueue(fruit);
+
+            if (!fruitPool.Contains(fruit))
+                fruitPool.Enqueue(fruit);
+        }
+
+        public void ClearAllFruits()
+        {
+            foreach (GameObject fruit in fruitPool)
+            {
+                if (fruit != null)
+                    fruit.SetActive(false);
+            }
+
+            lifetimeCoroutines.Clear();
+        }
+
+        private void OnDisable()
+        {
+            foreach (Coroutine coroutine
+                     in lifetimeCoroutines.Values)
+            {
+                if (coroutine != null)
+                    StopCoroutine(coroutine);
+            }
+
+            lifetimeCoroutines.Clear();
         }
     }
-}
+}   

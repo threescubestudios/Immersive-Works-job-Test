@@ -109,6 +109,8 @@ namespace ImmersiWorks.Platform.Core
 namespace ImmersiWorks.Platform.Runtime
 {
     using ImmersiWorks.Platform.Core;
+    using SaveCurupira.UI;
+    using UnityEditor.Rendering;
 
     /// <summary>
     /// Keeps a score per player. The real platform shows this across four zones on the wall.
@@ -315,6 +317,7 @@ namespace ImmersiWorks.Platform.Runtime
             LastMessage        = text;
             LastMessageSeconds = durationSeconds;
             MessageShown?.Invoke(text, durationSeconds);
+            UIManager.Instance.tutorialText.text = text;
             Debug.Log($"[{GameId}] {text}");
         }
 

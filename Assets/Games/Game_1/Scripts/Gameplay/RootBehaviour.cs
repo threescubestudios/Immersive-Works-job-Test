@@ -4,89 +4,183 @@ namespace SaveCurupira.Gameplay
 {
     public class RootBehaviour : MonoBehaviour
     {
-        public int health = 60;
-        private int maxHealth = 60;
-        private bool isDestroyed = false;
-        
-        public RectTransform healthFill;
-        public Canvas healthCanvas;
-        private float showHealthTimer = 0f;
+        [Header("Health")]
+        [SerializeField] private int defaultHealth = 3;
+
+        public int health { get; private set; }
+
+        private int maxHealth;
+        private bool isDestroyed;
+
+        [Header("Health UI")]
+        [SerializeField] private RectTransform healthFill;
+        [SerializeField] private Canvas healthCanvas;
+
+        [SerializeField] private float healthDisplayDuration = 2f;
+        [SerializeField] private float fadeInSpeed = 5f;
+        [SerializeField] private float fadeOutSpeed = 2f;
+
+        private float showHealthTimer;
         private CanvasGroup canvasGroup;
 
         private void Awake()
         {
             if (healthCanvas != null)
             {
-                canvasGroup = healthCanvas.GetComponent<CanvasGroup>();
-                if (canvasGroup == null) canvasGroup = healthCanvas.gameObject.AddComponent<CanvasGroup>();
-                canvasGroup.alpha = 0f;
-                healthCanvas.gameObject.SetActive(false);
+                canvasGroup =
+                    healthCanvas.GetComponent<CanvasGroup>();
+
+                if (canvasGroup == null)
+                {
+                    canvasGroup =
+                        healthCanvas.gameObject.AddComponent<CanvasGroup>();
+                }
             }
+
+            maxHealth = Mathf.Max(1, defaultHealth);
+            health = maxHealth;
+
+            HideHealthBar();
         }
 
         public void Initialize(int startingHealth)
         {
-            maxHealth = startingHealth;
-            health = startingHealth;
+            maxHealth = Mathf.Max(1, startingHealth);
+            health = maxHealth;
             isDestroyed = false;
-            gameObject.SetActive(true);
-            
-            if (healthFill != null)
-            {
-                healthFill.anchorMax = new Vector2(1f, 1f); // Full
-            }
-            
-            if (healthCanvas != null)
-            {
-                if (canvasGroup != null) canvasGroup.alpha = 0f;
-                healthCanvas.gameObject.SetActive(false);
-            }
+            showHealthTimer = 0f;
+
+            UpdateHealthBar();
+            HideHealthBar();
+
+            Debug.Log(
+                $"[RootBehaviour] {gameObject.name} initialized with {health} HP."
+            );
         }
 
         public void TakeDamage(int amount)
         {
-            if (isDestroyed) return;
+            if (isDestroyed)
+                return;
+
+            if (amount <= 0)
+                return;
 
             health -= amount;
-            showHealthTimer = 2f; // Show for 2 seconds
-            
-            if (healthFill != null)
-            {
-                float healthPercent = (float)Mathf.Max(0, health) / maxHealth;
-                healthFill.anchorMax = new Vector2(healthPercent, 1f); // Scale down horizontally
-            }
-            
+            health = Mathf.Max(0, health);
+
+            ShowHealthBar();
+            UpdateHealthBar();
+
+            Debug.Log(
+                $"[RootBehaviour] {gameObject.name} hit! " +
+                $"Health: {health}/{maxHealth}"
+            );
+
             if (health <= 0)
             {
-                isDestroyed = true;
-                if (Core.CurupiraGameController.Instance != null)
-                {
-                    Core.CurupiraGameController.Instance.OnRootDestroyed();
-                }
-                gameObject.SetActive(false);
+                DestroyRoot();
             }
+        }
+
+        private void DestroyRoot()
+        {
+            if (isDestroyed)
+                return;
+
+            isDestroyed = true;
+
+            HideHealthBar();
+
+            Debug.Log(
+                $"[RootBehaviour] {gameObject.name} destroyed!"
+            );
+
+            if (Core.CurupiraGameController.Instance != null)
+            {
+                Core.CurupiraGameController.Instance
+                    .OnRootDestroyed();
+            }
+
+            gameObject.SetActive(false);
+        }
+
+        private void UpdateHealthBar()
+        {
+            if (healthFill == null)
+                return;
+
+            float healthPercent =
+                maxHealth > 0
+                    ? (float)health / maxHealth
+                    : 0f;
+
+            healthFill.anchorMin =
+                new Vector2(0f, 0f);
+
+            healthFill.anchorMax =
+                new Vector2(
+                    Mathf.Clamp01(healthPercent),
+                    1f
+                );
+        }
+
+        private void ShowHealthBar()
+        {
+            if (healthCanvas == null ||
+                canvasGroup == null)
+                return;
+
+            showHealthTimer =
+                healthDisplayDuration;
+
+            healthCanvas.gameObject.SetActive(true);
+        }
+
+        private void HideHealthBar()
+        {
+            showHealthTimer = 0f;
+
+            if (canvasGroup != null)
+                canvasGroup.alpha = 0f;
+
+            if (healthCanvas != null)
+                healthCanvas.gameObject.SetActive(false);
         }
 
         private void Update()
         {
-            if (healthCanvas != null && canvasGroup != null && !isDestroyed)
+            if (healthCanvas == null ||
+                canvasGroup == null ||
+                isDestroyed)
+                return;
+
+            if (showHealthTimer > 0f)
             {
-                if (showHealthTimer > 0)
+                showHealthTimer -= Time.deltaTime;
+
+                if (!healthCanvas.gameObject.activeSelf)
+                    healthCanvas.gameObject.SetActive(true);
+
+                canvasGroup.alpha =
+                    Mathf.MoveTowards(
+                        canvasGroup.alpha,
+                        1f,
+                        Time.deltaTime * fadeInSpeed
+                    );
+            }
+            else
+            {
+                canvasGroup.alpha =
+                    Mathf.MoveTowards(
+                        canvasGroup.alpha,
+                        0f,
+                        Time.deltaTime * fadeOutSpeed
+                    );
+
+                if (canvasGroup.alpha <= 0f)
                 {
-                    showHealthTimer -= Time.deltaTime;
-                    if (!healthCanvas.gameObject.activeSelf) healthCanvas.gameObject.SetActive(true);
-                    canvasGroup.alpha = Mathf.MoveTowards(canvasGroup.alpha, 1f, Time.deltaTime * 5f); // Fade in fast
-                }
-                else
-                {
-                    if (canvasGroup.alpha > 0)
-                    {
-                        canvasGroup.alpha = Mathf.MoveTowards(canvasGroup.alpha, 0f, Time.deltaTime * 2f); // Fade out smoothly
-                    }
-                    else if (healthCanvas.gameObject.activeSelf)
-                    {
-                        healthCanvas.gameObject.SetActive(false); // Disable when fully faded out
-                    }
+                    healthCanvas.gameObject.SetActive(false);
                 }
             }
         }
